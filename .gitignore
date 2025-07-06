@@ -1,0 +1,10 @@
+__pycache__/
+.env
+env/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.gpg
+*.sqlite3
+.shush/

@@ -1,0 +1,17 @@
+antiorm==1.2.1
+cffi==1.17.1
+click==8.2.1
+cryptography==45.0.5
+db==0.1.1
+db-sqlite3==0.0.1
+markdown-it-py==3.0.0
+mdurl==0.1.2
+psutil==7.0.0
+pycparser==2.22
+Pygments==2.19.2
+pyperclip==1.9.0
+python-gnupg==0.5.4
+rich==14.0.0
+shellingham==1.5.4
+typer==0.16.0
+typing_extensions==4.14.1

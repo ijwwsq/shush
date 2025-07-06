@@ -1,0 +1,87 @@
+# shush
+
+shush is a local, password-encrypted secrets manager for the command line. it allows you to securely store and retrieve secrets like api tokens, passwords, or environment variables using gpg encryption and a local sqlite database. designed to be minimal, offline, and developer-focused.
+
+## features
+
+- local-first architecture, no cloud or remote storage
+- gpg-based symmetric encryption
+- sqlite backend for secret storage
+- simple cli interface powered by typer
+- fernet encryption layer for stored values
+- works fully offline
+
+## requirements
+
+- python 3.8+
+- gpg installed and available in $path
+
+## installation
+
+```bash
+git clone git@github.com:ijwwsq/shush.git  
+cd shush
+python -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+chmod +x shush
+ln -s $(pwd)/shush ~/.local/bin/shush  # optional: to use 'shush' globally
+````
+
+## usage
+
+### initialize
+
+create gpg environment, sqlite db, and store master password (encrypted using itself):
+
+```bash
+shush init
+```
+
+### add a secret
+
+encrypt and save a secret by key:
+
+```bash
+shush add github_token
+```
+
+### get a secret
+
+decrypt and print a stored secret:
+
+```bash
+shush get github_token
+```
+
+### get and copy to clipboard
+
+```bash
+shush get github_token --copy
+```
+
+### list all saved keys
+
+```bash
+shush list
+```
+
+### remove a secret
+
+```bash
+shush remove github_token
+```
+
+## security
+
+* all secrets are encrypted using fernet (symmetric aes)
+* the fernet key is derived from your master password using sha-256
+* the master password itself is stored encrypted with gpg, and only accessible by re-entering it
+* everything remains local and under your control
+* recommended to use in a personal environment with disk encryption enabled
+
+additional guarantees:
+
+* sensitive data is explicitly cleared from memory after each operation
+* the fernet key and master password live only within the scope of a single command
+* no plaintext passwords or secrets are ever written to disk or held in memory longer than needed
