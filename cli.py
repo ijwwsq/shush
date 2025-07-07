@@ -3,6 +3,8 @@ import typer
 import getpass
 import pyperclip
 
+from core.config import MASTER_KEY_PATH
+
 from core.storage import (
     initialize_db, 
     get_secret, 
@@ -25,8 +27,19 @@ pyperclip.set_clipboard("xclip") # fix later, wsl problem
 def init():
     initialize_gpg()
     initialize_db()
+
+    if MASTER_KEY_PATH.exists():
+        typer.echo("error: repository already initialized", err=True)
+        raise typer.Exit(code=1)
+
     password = getpass.getpass("create master password: ")
+    password_confirm = getpass.getpass("confirm master password: ")
+    if password != password_confirm:
+        typer.echo("error: passwords do not match", err=True)
+        raise typer.Exit(code=1)
+
     encrypt_master_key(password)
+    # optional: del password, password_confirm; gc.collect()
     typer.echo("shush initialized.")
 
 @app.command()
