@@ -84,7 +84,7 @@ def get_secret(key: str, fernet: Fernet) -> str:
 def save_secret(key: str, value: str, fernet: Fernet):
     key_hash = _hash_key(key)
     encrypted = fernet.encrypt(value.encode()).decode()
-    created_at = datetime.now()
+    created_at = datetime.now().isoformat()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
