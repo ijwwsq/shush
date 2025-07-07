@@ -4,13 +4,14 @@ import base64
 import hashlib
 import gc
 from pathlib import Path
-from .config import GPG_HOME, MASTER_KEY_PATH
+from .config import GPG_HOME, MASTER_KEY_PATH, SHUSH_HOME
 from cryptography.fernet import Fernet
 
 
 GPG = gnupg.GPG(gnupghome=str(GPG_HOME))
 
 def initialize_gpg():
+    os.makedirs(SHUSH_HOME, exist_ok=True)
     os.makedirs(GPG_HOME, exist_ok=True)
     os.makedirs(MASTER_KEY_PATH.parent, exist_ok=True)
 
