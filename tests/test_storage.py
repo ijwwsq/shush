@@ -48,7 +48,7 @@ def test_delete_secret(temp_db, fernet):
     value = "value"
     storage.save_secret(key, value, fernet)
 
-    deleted = storage.delete_secret(storage._hash_key(key))
+    deleted = storage.delete_secret(key)
     assert deleted
 
     with pytest.raises(KeyError):

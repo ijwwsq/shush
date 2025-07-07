@@ -56,7 +56,16 @@ def init():
 @app.command()
 def add(key: str):
     raw_pass = bytearray(getpass.getpass("enter your master password: ").encode())
-    master = decrypt_master_key(raw_pass.decode())
+    
+    try:
+        master = decrypt_master_key(raw_pass.decode())
+    except RuntimeError as e:
+        typer.echo(f"error: {e}", err=True)
+        for i in range(len(raw_pass)): raw_pass[i] = 0
+        del raw_pass
+        gc.collect()
+        raise typer.Exit(code=1)
+
     fernet = derive_fernet_key(master)
 
     raw_secret = bytearray(getpass.getpass(f"enter secret for '{key}': ").encode())
@@ -64,22 +73,31 @@ def add(key: str):
 
     typer.echo(f"secret '{key}' saved.")
 
-    # secure erase
     for i in range(len(raw_pass)): raw_pass[i] = 0
     for i in range(len(raw_secret)): raw_secret[i] = 0
     del fernet, master, raw_pass, raw_secret
     gc.collect()
 
+
 @app.command()
 def get(key: str, copy: bool = typer.Option(False, "--copy", help="copy secret to clipboard")):
-    praw_pass = bytearray(getpass.getpass("enter your master password: ").encode())
-    password = decrypt_master_key(raw_pass.decode())
+    raw_pass = bytearray(getpass.getpass("enter your master password: ").encode())
+    
+    try:
+        password = decrypt_master_key(raw_pass.decode())
+    except RuntimeError as e:
+        typer.echo(f"error: {e}", err=True)
+        del raw_pass
+        gc.collect()
+        raise typer.Exit(code=1)
+    
     fernet = derive_fernet_key(password)
     value = get_secret(key, fernet)
 
     if copy:
         pyperclip.copy(value)
         typer.echo(f"secret '{key}' copied to clipboard.")
+        typer.echo("warning: please clear your clipboard manually. ttl feature is coming soon")
     else:
         typer.echo(value)
 

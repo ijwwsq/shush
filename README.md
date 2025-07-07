@@ -99,3 +99,7 @@ additional guarantees:
 * the fernet key and master password live only within the scope of a single command
 * no plaintext passwords or secrets are ever written to disk or held in memory longer than needed
 * initialization is blocked if a repository already exists
+
+## contributing
+
+shush is a small but serious project. contributions, ideas, or feedback are very welcome — even a single suggestion can make it better.
