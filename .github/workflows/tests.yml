@@ -25,7 +25,10 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-
+      
+      - name: Setup shush directories
+        run: mkdir -p ~/.shush/gpg
+      
       - name: run tests
         run: |
           source venv/bin/activate
