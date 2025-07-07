@@ -32,36 +32,48 @@ def init():
         typer.echo("error: repository already initialized", err=True)
         raise typer.Exit(code=1)
 
-    password = getpass.getpass("create master password: ")
-    password_confirm = getpass.getpass("confirm master password: ")
-    if password != password_confirm:
+    raw_password = bytearray(getpass.getpass("create master password: ").encode())
+    raw_confirm = bytearray(getpass.getpass("confirm master password: ").encode())
+
+    if raw_password != raw_confirm:
         typer.echo("error: passwords do not match", err=True)
+        for i in range(len(raw_password)): raw_password[i] = 0
+        for i in range(len(raw_confirm)): raw_confirm[i] = 0
+        del raw_password, raw_confirm
+        gc.collect()
         raise typer.Exit(code=1)
 
-    encrypt_master_key(password)
-    # optional: del password, password_confirm; gc.collect()
+    encrypt_master_key(raw_password.decode())
+
+    for i in range(len(raw_password)): raw_password[i] = 0
+    for i in range(len(raw_confirm)): raw_confirm[i] = 0
+    del raw_password, raw_confirm
+    gc.collect()
+
     typer.echo("shush initialized.")
+
 
 @app.command()
 def add(key: str):
-    passphrase = getpass.getpass("enter your master password: ")
-    master = decrypt_master_key(passphrase)
+    raw_pass = bytearray(getpass.getpass("enter your master password: ").encode())
+    master = decrypt_master_key(raw_pass.decode())
     fernet = derive_fernet_key(master)
 
-    value = getpass.getpass(f"enter secret for '{key}': ")
-    save_secret(key, value, fernet)
+    raw_secret = bytearray(getpass.getpass(f"enter secret for '{key}': ").encode())
+    save_secret(key, raw_secret.decode(), fernet)
+
     typer.echo(f"secret '{key}' saved.")
 
-    del fernet, master, passphrase, value
+    # secure erase
+    for i in range(len(raw_pass)): raw_pass[i] = 0
+    for i in range(len(raw_secret)): raw_secret[i] = 0
+    del fernet, master, raw_pass, raw_secret
     gc.collect()
 
 @app.command()
-def get(
-    key: str,
-    copy: bool = typer.Option(False, "--copy", help="copy secret to clipboard")
-):
-    passphrase = getpass.getpass("enter your master password: ")
-    password = decrypt_master_key(passphrase)
+def get(key: str, copy: bool = typer.Option(False, "--copy", help="copy secret to clipboard")):
+    praw_pass = bytearray(getpass.getpass("enter your master password: ").encode())
+    password = decrypt_master_key(raw_pass.decode())
     fernet = derive_fernet_key(password)
     value = get_secret(key, fernet)
 
@@ -71,13 +83,15 @@ def get(
     else:
         typer.echo(value)
 
-    del fernet, password, passphrase, value
+    # secure erase
+    for i in range(len(raw_pass)): raw_pass[i] = 0
+    del raw_pass, fernet, password, value
     gc.collect()
 
 @app.command()
 def remove(key: str):
-    passphrase = getpass.getpass("enter master password: ")
-    master = decrypt_master_key(passphrase)
+    raw_pass = bytearray(getpass.getpass("enter master password: ").encode())
+    master = decrypt_master_key(raw_pass.decode())
     fernet = derive_fernet_key(master)
 
     success = delete_secret(key)
@@ -86,7 +100,8 @@ def remove(key: str):
     else:
         typer.echo(f"no secret found for key '{key}'.")
 
-    del password
+    for i in range(len(raw_pass)): raw_pass[i] = 0
+    del raw_pass, master, fernet
     gc.collect()
 
 @app.command()

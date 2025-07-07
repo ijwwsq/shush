@@ -9,6 +9,7 @@ shush is a local, password-encrypted secrets manager for the command line. it al
 - sqlite backend for secret storage
 - simple cli interface powered by typer
 - fernet encryption layer for stored values
+- secure key hashing and cleanup
 - works fully offline
 
 ## requirements
@@ -32,7 +33,7 @@ ln -s $(pwd)/shush ~/.local/bin/shush  # optional: to use 'shush' globally
 
 ### initialize
 
-create gpg environment, sqlite db, and store master password (encrypted using itself):
+create gpg environment, sqlite db, and store master password (encrypted using itself). prevents reinitialization if already set:
 
 ```bash
 shush init
@@ -40,7 +41,7 @@ shush init
 
 ### add a secret
 
-encrypt and save a secret by key:
+encrypt and save a secret by key. key is hashed before storing:
 
 ```bash
 shush add github_token
@@ -68,7 +69,7 @@ shush remove github_token
 
 ### status
 
-shows number of stored keys, last activity time, and db size
+shows number of stored keys, last activity time, and db size:
 
 ```bash
 shush status
@@ -88,6 +89,7 @@ db size: 20480 bytes
 * all secrets are encrypted using fernet (symmetric aes)
 * the fernet key is derived from your master password using sha-256
 * the master password itself is stored encrypted with gpg, and only accessible by re-entering it
+* secret keys are hashed with sha-256 before storing
 * everything remains local and under your control
 * recommended to use in a personal environment with disk encryption enabled
 
@@ -96,3 +98,4 @@ additional guarantees:
 * sensitive data is explicitly cleared from memory after each operation
 * the fernet key and master password live only within the scope of a single command
 * no plaintext passwords or secrets are ever written to disk or held in memory longer than needed
+* initialization is blocked if a repository already exists
