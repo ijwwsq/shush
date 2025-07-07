@@ -60,16 +60,27 @@ shush get github_token
 shush get github_token --copy
 ```
 
-### list all saved keys
-
-```bash
-shush list
-```
-
 ### remove a secret
 
 ```bash
 shush remove github_token
+```
+
+### status
+
+shows number of stored keys, last activity time, and db size
+
+```bash
+shush status
+```
+
+example:
+
+```bash
+stored keys: 2
+last activity: 2025-07-07 20:56:56.893925
+last modification: 2025-07-07 20:56:56.891874
+db size: 20480 bytes
 ```
 
 ## security

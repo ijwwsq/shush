@@ -10,7 +10,7 @@ from core.storage import (
     get_secret, 
     save_secret, 
     delete_secret,
-    list_keys
+    get_status
 )
 from core.crypto import (
     initialize_gpg,
@@ -75,23 +75,6 @@ def get(
     gc.collect()
 
 @app.command()
-def list():
-    passphrase = getpass.getpass("enter master password: ")
-    master = decrypt_master_key(passphrase)
-    fernet = derive_fernet_key(master)
-
-    keys = list_keys()
-    if not keys:
-        typer.echo("no secrets stored.")
-    else:
-        typer.echo("stored keys:")
-        for key in keys:
-            typer.echo(f"- {key}")
-
-    del fernet, master, passphrase
-    gc.collect()
-
-@app.command()
 def remove(key: str):
     passphrase = getpass.getpass("enter master password: ")
     master = decrypt_master_key(passphrase)
@@ -105,6 +88,17 @@ def remove(key: str):
 
     del password
     gc.collect()
+
+@app.command()
+def status():
+    try:
+        info = get_status()
+        typer.echo(f"stored keys: {info['keys_count']}")
+        typer.echo(f"last activity: {info['last_access']}")
+        typer.echo(f"last modification: {info['last_modified']}")
+        typer.echo(f"db size: {info['db_size_bytes']} bytes")
+    except Exception as e:
+        typer.echo(f"error: {e}")
 
 if __name__ == '__main__':
     app()

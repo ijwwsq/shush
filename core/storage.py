@@ -1,8 +1,16 @@
+import os
 import sqlite3
-from cryptography.fernet import Fernet
+import hashlib
+from datetime import datetime
 from pathlib import Path
+
+from cryptography.fernet import Fernet
+
 from .config import DB_PATH
 
+
+def _hash_key(key: str) -> str:
+    return hashlib.sha256(key.encode()).hexdigest()
 
 def initialize_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -11,19 +19,60 @@ def initialize_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS secrets (
             key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
+            value TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    """)    
     conn.commit()
     conn.close()
 
-def get_secret(key: str, fernet: Fernet) -> str:
+def update_activity():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("REPLACE INTO meta (key, value) VALUES (?, ?)", ("last_activity", str(datetime.now())))
+    conn.commit()
+    conn.close()
+
+def get_status() -> dict:
+    if not os.path.exists(DB_PATH):
+        raise RuntimeError("database not found")
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT value FROM secrets WHERE key = ?", (key,))
+    cursor.execute("SELECT COUNT(*) FROM secrets")
+    count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT value FROM meta WHERE key = 'last_activity'")
+    activity_row = cursor.fetchone()
+    last_activity = activity_row[0] if activity_row else "unknown"
+
+    conn.close()
+
+    stat = os.stat(DB_PATH)
+
+    return {
+        "keys_count": count,
+        "db_size_bytes": stat.st_size,
+        "last_access": last_activity,
+        "last_modified": datetime.fromtimestamp(stat.st_mtime),
+    }
+
+def get_secret(key: str, fernet: Fernet) -> str:
+    key_hash = _hash_key(key)
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT value FROM secrets WHERE key = ?", (key_hash,))
     row = cursor.fetchone()
     conn.close()
+    update_activity()
 
     if row is None:
         raise KeyError(f"No secret found for key: {key}")
@@ -33,20 +82,23 @@ def get_secret(key: str, fernet: Fernet) -> str:
     return decrypted_value
 
 def save_secret(key: str, value: str, fernet: Fernet):
+    key_hash = _hash_key(key)
     encrypted = fernet.encrypt(value.encode()).decode()
-
+    created_at = datetime.now()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS secrets (
             key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
+            value TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL
         )
     """)
 
-    cursor.execute("REPLACE INTO secrets (key, value) VALUES (?, ?)", (key, encrypted))
+    cursor.execute("REPLACE INTO secrets (key, value, created_at) VALUES (?, ?, ?)", (key_hash, encrypted, created_at))
     conn.commit()
+    update_activity()
     conn.close()
 
 def delete_secret(key: str) -> bool:
@@ -56,12 +108,5 @@ def delete_secret(key: str) -> bool:
     affected = cursor.rowcount
     conn.commit()
     conn.close()
+    update_activity()
     return affected > 0
-
-def list_keys() -> list[str]:
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT key FROM secrets ORDER BY key")
-    rows = cursor.fetchall()
-    conn.close()
-    return [row[0] for row in rows]
