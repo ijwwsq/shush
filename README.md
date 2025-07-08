@@ -84,6 +84,33 @@ last modification: 2025-07-07 20:56:56.891874
 db size: 20480 bytes
 ```
 
+### view activity logs
+
+you can inspect a full audit log of all operations performed. every `add`, `get`, `remove`, `status`, and `log` call is logged automatically with timestamp, operation, key hash, and result.
+
+```bash
+shush logs
+```
+
+sample output:
+
+```
+[2025-07-08T12:23:36.575417+05:00] add          8fbcde4b...  status=success
+[2025-07-08T12:23:58.137019+05:00] get          6114bf41...  status=success
+[2025-07-08T12:24:03.018761+05:00] get          8fbcde4b...  status=success note=copied to clipboard
+```
+
+you can also filter by time:
+
+```bash
+shush logs --since today
+shush logs --since 1h
+shush logs --since 2025-07-08T10:00:00 --until 2025-07-08T12:00:00
+```
+
+internally, logs are stored in `~/.shush/activity.log` in plain text. only timestamps and hashed keys are stored — secret values are never logged. this feature helps track usage and detect unintended access.
+
+
 ## security
 
 * all secrets are encrypted using fernet (symmetric aes)
